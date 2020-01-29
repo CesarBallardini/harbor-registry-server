@@ -47,7 +47,7 @@ crea_claves_ssl_autofirmadas() {
     sudo sed -i "/\[[ ]*v3_ca[ ]*\]/a subjectAltName = IP:${HARBOR_DOMAIN_NAME}"  /etc/ssl/openssl.cnf 
   fi
 
-  cd harbor/
+  cd ~/harbor/
 
   echo Generate the self-signed certificates
   openssl req -newkey rsa:4096 -nodes -sha256 -keyout ca.key \
