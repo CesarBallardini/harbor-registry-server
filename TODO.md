@@ -3,13 +3,14 @@
 * En la configuración, elegir un filesystem con mucho espacio libre para almacenar las imágenes
 
 * Opciones SSL
-   a. Con certificado autofirmado
-   b. Sin Certificados
-   c. Con certificados de LetsEncrypt
+   * Con certificado autofirmado
+   * Sin Certificados
+   * Con certificados de LetsEncrypt
+   * Con certificados comprados
 
 * Autenticación
-   a. Integrar con LDAP 
-   b. Integrar con OpenID Connect 
+   * Integrar con LDAP 
+   * Integrar con OpenID Connect 
 
 * En la configuración, adaptar para que funcione detrás de un reverse proxy
 
