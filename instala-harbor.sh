@@ -10,13 +10,36 @@ HARBOR_DOMAIN_NAME=$( hostname -I | tr " " "\012" | grep -v 10.0.2.15 | awk '/^(
 HARBOR_ADMIN_PASSWORD=Harbor12345
 HARBOR_DATABASE_PASSWORD=root123
 
+# https://github.com/docker/compose/releases/latest
+DOCKER_COMPOSE_VERSION=1.25.3
+
+##
+# apaga y elimina las imágenes:
+# sudo /usr/local/bin/docker-compose -f /home/vagrant/harbor/docker-compose.yml down --rmi all
+
+##
+# version de harbor
+#
+# https://github.com/goharbor/harbor/releases/latest
+#
+#harbor_version_deseada=v1.8.1
+#harbor_version_deseada=v1.8.6
+#harbor_version_deseada=v1.9.4
+harbor_version_deseada=v1.10.0
+
 
 instala_docker() {
-  sudo apt-get install docker.io -y
-  sudo usermod -aG docker $USER
+  if [ -z "$(whereis -b docker  | cut -d: -f2)" ] 
+  then
+    sudo apt-get install docker.io -y
+    sudo usermod -aG docker $USER
+  fi
 
-  sudo curl -L https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
-  sudo chmod +x /usr/local/bin/docker-compose
+  if [ -z "$(whereis -b docker-compose  | cut -d: -f2)" ] 
+  then
+    sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+  fi
 }
 
 
@@ -33,8 +56,23 @@ instala_nginx() {
 }
 
 descarga_harbor() {
-  [ -f harbor-offline-installer-v1.8.1.tgz ] || wget https://storage.googleapis.com/harbor-releases/release-1.8.0/harbor-offline-installer-v1.8.1.tgz
-  tar xvzf harbor-offline-installer-v1.8.1.tgz
+
+  harbor_url_version=$( curl --silent "https://api.github.com/repos/goharbor/harbor/releases"  | jq -r '.[] | select(.name|test("v[0-9]*.[0-9]*.[0-9]*$")) | .name ' | sort -rV | head -n1 )
+
+  [ "${harbor_version_deseada}" != "${harbor_url_version}" ] && echo "CUIDADO: la version solicitada [${harbor_version_deseada}] NO ES IGUAL a la ultima disponible: [${harbor_url_version}]"
+
+  # FIXME:
+  #harbor_url_download=$( curl --silent "https://api.github.com/repos/goharbor/harbor/releases" | jq -r '.[].assets[] | select(.name == "harbor-offline-installer-'${harbor_version_deseada}'.tgz").browser_download_url' )
+
+  harbor_url_download="https://github.com/goharbor/harbor/releases/download/${harbor_version_deseada}/harbor-offline-installer-${harbor_version_deseada}.tgz"
+
+
+  harbor_filename="harbor-offline-installer-${harbor_version_deseada}.tgz"
+
+  [ -f "${harbor_filename}" ] || wget "${harbor_url_download}"
+  [ $? != 0 ] && exit 99
+
+  tar xvzf "${harbor_filename}"
 }
 
 
@@ -75,7 +113,131 @@ copia_claves_al_docker() {
 }
 
 
-configura_instalador_harbor() {
+configura_instalador_harbor_10() {
+  cd ~/harbor/
+  [ -f harbor.yml.orig ] || sudo cp  harbor.yml harbor.yml.orig
+
+    cat << EOF > harbor.yml
+hostname: ${HARBOR_DOMAIN_NAME}
+
+http:
+  port: 8080
+
+https:
+   port: 443
+   certificate: /etc/docker/certs.d/${HARBOR_DOMAIN_NAME}/ca.crt
+   private_key: /etc/docker/certs.d/${HARBOR_DOMAIN_NAME}/ca.key
+
+harbor_admin_password: ${HARBOR_ADMIN_PASSWORD}
+
+database:
+  password: ${HARBOR_DATABASE_PASSWORD}
+  max_idle_conns: 50
+  max_open_conns: 100
+
+data_volume: /data
+
+clair:
+  updaters_interval: 12
+
+jobservice:
+  max_job_workers: 10
+
+notification:
+  webhook_job_max_retry: 10
+
+chart:
+  absolute_url: disabled
+
+log:
+  level: info
+  local:
+    rotate_count: 50
+    rotate_size: 200M
+    location: /var/log/harbor
+
+#This attribute is for migrator to detect the version of the .cfg file, DO NOT MODIFY!
+_version: 1.10.0
+
+proxy:
+  http_proxy:
+  https_proxy:
+  # no_proxy endpoints will appended to 127.0.0.1,localhost,.local,.internal,log,db,redis,nginx,core,portal,postgresql,jobservice,registry,registryctl,clair,chartmuseum,notary-server
+  no_proxy:
+  components:
+    - core
+    - jobservice
+    - clair
+
+EOF
+
+}
+
+
+
+configura_instalador_harbor_9() {
+  cd ~/harbor/
+  [ -f harbor.yml.orig ] || sudo cp  harbor.yml harbor.yml.orig
+
+  cat << EOF > harbor.yml
+hostname: ${HARBOR_DOMAIN_NAME}
+
+http:
+  port: 8080
+
+https:
+   port: 443
+   certificate: /etc/docker/certs.d/${HARBOR_DOMAIN_NAME}/ca.crt
+   private_key: /etc/docker/certs.d/${HARBOR_DOMAIN_NAME}/ca.key
+
+harbor_admin_password: ${HARBOR_ADMIN_PASSWORD}
+
+database:
+  password: ${HARBOR_DATABASE_PASSWORD}
+  max_idle_conns: 50
+  max_open_conns: 100
+
+data_volume: /data
+
+clair:
+  updaters_interval: 12
+
+jobservice:
+  max_job_workers: 10
+
+notification:
+  webhook_job_max_retry: 10
+
+chart:
+  absolute_url: disabled
+
+log:
+  level: info
+  local:
+    rotate_count: 50
+    rotate_size: 200M
+    location: /var/log/harbor
+
+#This attribute is for migrator to detect the version of the .cfg file, DO NOT MODIFY!
+_version: 1.9.0
+
+proxy:
+  http_proxy:
+  https_proxy:
+  # no_proxy endpoint will append to already contained list:
+  # 127.0.0.1,localhost,.local,.internal,log,db,redis,nginx,core,portal,postgresql,jobservice,registry,registryctl,clair,chartmuseum,notary-server
+  no_proxy:
+  components:
+    - core
+    - jobservice
+    - clair
+EOF
+
+
+}
+
+
+configura_instalador_harbor_8() {
 
   cd ~/harbor/
   [ -f harbor.yml.orig ] || sudo cp  harbor.yml harbor.yml.orig
@@ -163,15 +325,27 @@ EOF
 # main
 #
 sudo apt-get update -q
-sudo apt-get install curl wget -y
+sudo apt-get install curl wget jq -y
 
 instala_docker
 desactiva_apache2
 instala_nginx
+
+# elimina una instalación anterior, si existiese:
+sudo /usr/local/bin/docker-compose -f ~/harbor/docker-compose.yml down --rmi all
+sudo rm -rf ~/harbor/
+
 descarga_harbor
 crea_claves_ssl_autofirmadas
 copia_claves_al_docker
-configura_instalador_harbor
+
+config_version=$(echo "${harbor_version_deseada}" | sed -e "s/^v\([0-9]*\.[0-9]*\)\..*/\\1/" -e "s/\./_/" )
+
+
+[ "1_8"  == "${config_version}" ] && configura_instalador_harbor_8
+[ "1_9"  == "${config_version}" ] && configura_instalador_harbor_9
+[ "1_10" == "${config_version}" ] && configura_instalador_harbor_10
+
 instala_harbor
 crea_servicio_systemd
 
