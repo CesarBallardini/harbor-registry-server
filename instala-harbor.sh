@@ -117,7 +117,6 @@ configura_instalador_harbor_10() {
   cd ~/harbor/
   [ -f harbor.yml.orig ] || sudo cp  harbor.yml harbor.yml.orig
 
-  sudo mkdir /srv/data
 
     cat << EOF > harbor.yml
 hostname: ${HARBOR_DOMAIN_NAME}
@@ -181,7 +180,6 @@ configura_instalador_harbor_9() {
   cd ~/harbor/
   [ -f harbor.yml.orig ] || sudo cp  harbor.yml harbor.yml.orig
 
-  sudo mkdir /srv/data
 
   cat << EOF > harbor.yml
 hostname: ${HARBOR_DOMAIN_NAME}
@@ -246,7 +244,6 @@ configura_instalador_harbor_8() {
   cd ~/harbor/
   [ -f harbor.yml.orig ] || sudo cp  harbor.yml harbor.yml.orig
 
-  sudo mkdir /srv/data
 
   cat << EOF > harbor.yml
 hostname: ${HARBOR_DOMAIN_NAME}
