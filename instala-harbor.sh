@@ -117,6 +117,8 @@ configura_instalador_harbor_10() {
   cd ~/harbor/
   [ -f harbor.yml.orig ] || sudo cp  harbor.yml harbor.yml.orig
 
+  sudo mkdir /srv/data
+
     cat << EOF > harbor.yml
 hostname: ${HARBOR_DOMAIN_NAME}
 
@@ -135,7 +137,7 @@ database:
   max_idle_conns: 50
   max_open_conns: 100
 
-data_volume: /data
+data_volume: /srv/data
 
 clair:
   updaters_interval: 12
@@ -179,6 +181,8 @@ configura_instalador_harbor_9() {
   cd ~/harbor/
   [ -f harbor.yml.orig ] || sudo cp  harbor.yml harbor.yml.orig
 
+  sudo mkdir /srv/data
+
   cat << EOF > harbor.yml
 hostname: ${HARBOR_DOMAIN_NAME}
 
@@ -197,7 +201,7 @@ database:
   max_idle_conns: 50
   max_open_conns: 100
 
-data_volume: /data
+data_volume: /srv/data
 
 clair:
   updaters_interval: 12
@@ -242,6 +246,8 @@ configura_instalador_harbor_8() {
   cd ~/harbor/
   [ -f harbor.yml.orig ] || sudo cp  harbor.yml harbor.yml.orig
 
+  sudo mkdir /srv/data
+
   cat << EOF > harbor.yml
 hostname: ${HARBOR_DOMAIN_NAME}
 
@@ -259,7 +265,7 @@ harbor_admin_password: ${HARBOR_ADMIN_PASSWORD}
 database:
   password: ${HARBOR_DATABASE_PASSWORD}
 
-data_volume: /data
+data_volume: /srv/data
 
 clair:
   updaters_interval: 12
